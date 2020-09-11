@@ -1,0 +1,202 @@
+```{r}
+# Importando dados 
+dados = read.csv("Churn.csv", sep = ";", na.strings="", stringsAsFactors = T)
+                         # na.strings="" ao se deparar com um campo vazio ele será importado como NA
+                         # na é um valor não disponivel (NULL)
+#stringAsFactors = transforma strings em fatores que são dados categoricos com domínio, ou seja, tem um determinado conjunto de valores 
+
+head(dados)
+summary(dados)
+```
+
+Colunas:
+```{r}
+# Dando nome as colunas: 
+colnames(dados)=c("Id", "Score","Estado", "Genero", "Idade", "Patrimonio", "Saldo",
+                   "Produtos", "TemCartCredito", "Ativo", "Salario", "Saiu"  )
+head(dados)
+```
+Chrun analises = análises de estado do cliente usado para prever se eles pretendem continuar ou deixar de usar a empresa
+
+Explorar Dados, Colunas Categóricas
+```{r}
+# Estados: 
+counts = table(dados$Estado)
+  # contagem de dados categóricos 
+  # table cria um sumário 
+#Criando gráfico de barras:
+barplot(counts, main ="Estados", xlab="Estados")
+
+# Podemos observar que são 3 estados predominantes (RS, SC, PR)
+# Provavelmente a empresa só atende nessas regiões 
+# TD e RP possivelmente são valores errados, pois não existem esses estados 
+# Precisamos tratar esses dados incorretos 
+
+# Gênero: 
+counts = table(dados$Genero)
+barplot(counts, main="Gêneros", xlab="Generos")
+# Podemos identificar que existem alguns dados com Feminino e outros com Fem, isso precisa ser resolvido para que ambos sejam o mesmo 
+```
+
+Explorar colunas numéricas 
+```{r}
+# Score = capacidade do cliente de contrair empréstimos
+summary(dados$Score)
+  # nenhuma anomalia foi detectada 
+boxplot(dados$Score)
+  # também não mostrou nenhuma anomalia
+hist(dados$Score)
+  # Podemos ver que a distribuição é uniforme, então nao detectamos anomalias 
+```
+```{r}
+# Idade: 
+summary(dados$Idade)
+  # O valor mínimo da idade é -20, isso nos mostra uma anomalia 
+  # O valor máximo é 140, outra anomalia 
+  # A mediana e a média nos mostra que os dados estao bem distribuidos 
+boxplot(dados$Idade)
+  # Podemos ver várias variáveis fora do boxplot
+hist(dados$Idade)
+```
+```{r}
+# Saldo:
+summary(dados$Saldo)
+  # Como o primeiro quartil é 0, podemos ver que existem várias pessoas com saldo zero
+  # A média estando próximo da mediana mostra que os dados tem certa regularidade 
+boxplot(dados$Saldo)
+  # Nada fora do comum no boxplot 
+hist(dados$Saldo)
+  # Muitos valores no saldo 0, o mais provável é que nao existe essa informação do que as pessoas não tem saldo nenhum no banco 
+  # Fora o 0, os outros dados estão bem distribuidos 
+```
+```{r}
+# Salário:
+summary(dados$Salario)
+  # Podemos ver que existem 7 NA's, isso precisa ser tratado
+boxplot(dados$Salario)
+boxplot(dados$Salario, outline=F)
+```
+
+Retirando os valores NA: 
+```{r}
+dados[!complete.cases(dados),]
+  # Isso vai acessar apenas as linhas e vai filtrar apenas os dados incompletos 
+  # complet.cases nos mostrar apenas as linhas completas, porém negamos essa função
+
+# Observamos 12 linhas que tem valores NA em Generos e Salarios
+```
+```{r}
+# Tratando Salários:
+  # Valores numéricos com NA são substituidos pela Mediana 
+summary(dados$Salario)
+# Vendo a Mediana: 
+median(dados$Salario, na.rm=T)
+  # na.rm = Os NA afetam a mediana, isso retira os NA para calcular a mediana 
+# Atribuir a mediana nas NA 
+dados[is.na(dados$Salario),]$Salario = median(dados$Salario, na.rm=T)
+  # is.na = retorna V ou F se a informação for NA 
+  # quando is.na retornar verdadeiro ele é substituido pela mediana 
+dados[!complete.cases(dados),]
+  # Substituimos corretamente os valores NA pela Mediana
+```
+```{r}
+# Generos: 
+# Dados categoricos com NA são substituidos pela Moda
+
+# Vendo valores:
+unique(dados$Genero)
+  # Precisamos padronizar os generos
+summary(dados$Genero)
+  # Observamos que a Moda é Masculino
+# Transformando F e Fem em Feminino 
+# Transformando NA e M em Masculino 
+dados[is.na(dados$Genero) | dados$Genero=="M",]$Genero = "Masculino"
+dados[dados$Genero == "F" | dados$Genero=="Fem",]$Genero = "Feminino"
+# Resultados:
+summary(dados$Genero)
+
+# Removendo Levels não utilizados: 
+dados$Genero = factor(dados$Genero)
+  # Na importacao definimos como fator 
+  # Apos fazer a transformação, atribuimos a coluna genero os fatores 
+summary(dados$Genero)
+```
+
+Idades fora do domínio:
+```{r}
+summary(dados$Idade)
+# Visualizando os dados fora do domínio:
+dados[dados$Idade<0 | dados$Idade>110, ]$Idade
+  # Temos -10,-20 e 140
+  # Não temos idade NA: 
+dados[is.na(dados$Idade), ]
+
+# Opção: Preencher com a mediana: 
+median(dados$Idade)
+  # Mediana = 37
+#Substituição:
+dados[dados$Idade<0 | dados$Idade>110 , ]$Idade = median(dados$Idade)
+# Buscando novamente idades anormais:
+dados[dados$Idade<0 | dados$Idade>110, ]$Idade
+# Não temos idades anormais
+summary(dados$Idade)
+```
+
+Dados Duplicados: 
+```{r}
+# Buscar dados pelo ID: 
+x = dados[duplicated(dados$Id), ]
+x
+# Verificamos que o ID 81 está duplicado 
+#vamos excluir pelo indice 82
+dados = dados[-c(82),]
+
+#Verificando se funcionou:
+x = dados[duplicated(dados$Id), ]
+x
+```
+
+Estado fora do domínio:
+```{r}
+# Fora do domínio - Categórico 
+unique(dados$Estado)
+summary(dados$Estado)
+# Percebemos que a moda é RS e temos que preencher com ela 
+dados[!dados$Estado %in% c("RS", "SC", "PR"), ]$Estado = "RS"
+  # negamos os estados RS SC e PR e mudamos pra RS
+summary(dados$Estado)
+# Removendo os fatores não usados:
+dados$Estado = factor(dados$Estado)
+summary(dados$Estado)
+```
+
+Outliers:
+```{r}
+# Outliers dependem mto do domínio do negócio
+# Criamos uma métrica pro salário para definir se está fora do padrão ou não
+# Se estiver fora do padrão mudamos para mediana 
+# A metrica utilizada será que o salário pode ser até duas vezes o desvio padrão do próprio salário
+desv = sd(dados$Salario, na.rm=T)
+  # Criamos uma variável de desvio padrão 
+dados[dados$Salario>=2 *desv, ]$Salario 
+  # Verificando quantos salários temos nesse critério 
+  # Temos 4 salários fora do padrão 
+
+# Outra forma: resultado semelhante, mas sem os NAs
+boxplot(dados$Salario)
+  # Observamos 4 pontos como desvio padrão
+boxplot(dados$Salario, outline=F)
+  # Sem os outliers o boxplot fica comum, correto
+x = boxplot(dados$Salario)$out
+x
+# x é igual ao desv 
+
+# Atualizando todos para mediana:
+median(dados$Salario)
+dados[dados$Salario>=2 *desv, ]$Salario = median(dados$Salario)
+
+#Checagem:
+dados[dados$Salario>=2 *desv, ]$Salario 
+# Não temos mais nenhum salário fora do desvio padrão
+```
+
