@@ -1,0 +1,72 @@
+Visualização de Gráficos: 
+
+Histograma:
+```{r}
+# Utilizaremos os dados Trees, que já vem no R
+
+hist(trees$Height)
+hist(trees$Height, main = "Arvores", ylab="Frequencia", xlab="Altura", col="blue",
+     density=20, breaks=20)
+    # densidade = 20 = densidade da cor 
+    # breaks = número de quebras da informação 
+```
+Densidade:
+```{r}
+densidade = density(trees$Height)
+plot(densidade)
+```
+Colocando Densidade e Histograma no mesmo gráfico:
+```{r}
+hist(trees$Height, main=NULL, xlab=NULL)
+par(new=TRUE) # Esse parâmetro informa que a proxima impressao será uma sobreposição da impressao anterior 
+plot(densidade)
+```
+
+Dispersão:
+```{r}
+plot(trees$Girth, trees$Volume)
+plot(trees$Girth, trees$Volume, ylab="Circunferencia", xlab="Volume", col="red", main= "Arvores", pch=20) # pch = muda o elemento do gráfico 
+```
+Mudando o tipo:
+```{r}
+plot(trees$Girth, trees$Volume, ylab="Circunferencia", xlab="Volume", col="red", main= "Arvores", pch=20, type="l") # L = muda o gráfico para linhas  
+
+```
+
+Tremulação, diminui sobreposição. Usado para mudar pontos que tem o mesmo valor, facilita a visualizaçaõ.
+```{r}
+plot(jitter(trees$Girth), trees$Volume)
+```
+
+Legenda com dimensão categórica:
+```{r}
+# Usaremos os dados CO2 
+plot(CO2$conc, CO2$uptake, pch=20, col=CO2$Treatment)
+  # Plotamos com duas variáveis numéricas (conc e uptake) e colorimos de acordo com a categoria Treatment 
+legend("bottomright", legend=c("nonchilled", "chilled"), cex=1, fil=c("black", "red"))
+```
+
+Impressão de tabelas: 
+install.packages("stargaze")
+```{r}
+library(stargazer)
+```
+Formato Latx:
+```{r}
+stargazer(iris)
+```
+Formato HTML:
+```{r}
+stargazer(iris, type="html")
+```
+Formato Texto:
+```{r}
+stargazer(iris, type = "text")
+```
+Salva em disco: 
+```{r}
+stargazer(women, out="woman.tex", summary = FALSE)
+  # out = salvará em disco, no diritorio onde está o arquivo 
+  # summary = F não sumariza os dados 
+```
+
