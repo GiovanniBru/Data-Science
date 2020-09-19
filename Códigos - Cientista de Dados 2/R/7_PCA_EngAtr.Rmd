@@ -1,0 +1,79 @@
+install.packages('randomForest')
+install.packages('FactoMineR')
+
+Usaremos o PCA para diminuição da dimensionalidade
+```{r}
+library(randomForest)
+library(FactoMineR)
+```
+
+Criação de Modelo RandomForest com os dados de iris:
+```{r}
+set.seed(2334) # Definição da semente para permitir que seja replicado
+iris2 = as.data.frame(scale(iris[,-5]))
+  # Padronizamos as variáveis numéricas de 1 a 4 
+iris2$Species = iris$Species
+  # Adicionamos novamente a Specie 
+iris2
+```
+
+Separando os Dados:
+```{r}
+amostra = sample(2,150,replace=T, prob=c(0.7,0.3))
+iristreino = iris2[amostra==1,]
+iristeste = iris2[amostra==2,]
+```
+
+Criando modelo e fazendo previsão:
+```{r}
+floresta = randomForest(Species ~ .,data=iristreino, ntree=100,importance=T)
+previsao = predict(floresta,iristeste)
+```
+
+Avaliando modelo:
+```{r}
+confusao = table(previsao,iristeste$Species)
+confusao
+taxaacerto = (confusao[1] + confusao[5] + confusao[9])   / sum(confusao)
+taxaacerto
+```
+
+Reduzindo a Dimensionalidade: 
+```{r}
+# NCP = número de dimensões para manter no resultado
+# Já é feito o scale das variáveis por padrão
+pca = PCA(iris[,-5], ncp=3, graph = F)
+  # graph = escolhemos se queremos gerar um grafico ou não 
+summary(pca)
+```
+
+Criando um DataFrame com os componentes 1,2 e 3:
+```{r}
+# Concatenamos os 3 componentes criados no PCA junto com a Species e montamos um DataFrame novo para Iris
+irispca = data.frame(pca$ind$coord[,1],pca$ind$coord[,2],pca$ind$coord[,3], iris$Species)
+irispca
+```
+
+Separando para treino e teste:
+```{r}
+set.seed(2334) # Usamos a semente igual 
+amostrapca = sample(2,150,replace=T, prob=c(0.7,0.3))
+irispcatreino = irispca[amostrapca==1,]
+irispcateste = irispca[amostrapca==2,]
+```
+
+Fazendo Modelo e Previsão:
+```{r}
+florestapca = randomForest(iris.Species ~ .,data=irispcatreino, ntree=100,importance=T)
+previsaopca = predict(florestapca,irispcateste)
+```
+
+Avaliando novo modelo com dimensionalidade reduzida:
+```{r}
+confusaopca = table(previsaopca,irispcateste$iris.Species)
+confusaopca
+taxaacertopca = (confusaopca[1] + confusaopca[5] + confusaopca[9])   / sum(confusaopca)
+taxaacertopca
+```
+
+Após a redução da dimensionalidade podemos ver que a taxa de acerto aumentou!

@@ -1,0 +1,94 @@
+Práticas de Auto Machine Learning 
+
+Utilizaremos o pacote H20, pacote com várias bibliotecas de machine learning que também possui modelos 
+e tem técnicas de AML 
+```{r}
+#install.packages("h2o")
+library("h2o")
+```
+
+Vamos criar 2 modelos: um de AML e um de Random Florest 
+E comparar qual teve a melhor performance
+
+Primeiramente precisamos inicializar o H20:
+```{r}
+h2o.init()
+```
+
+Importando dados Churn_treino, arquivo extenso com 10.000 linhas e 11 colunas,usaremos para criação e teste 
+```{r}
+imp = read.csv("Churn_treino.csv", sep = ";")
+imp
+```
+
+Esse arquivo é sobre a perca de clientes para outras empresas 
+A Classe Exited diz 1 se a pessoa abandonou e 0 se não abandonou 
+
+Separamos o nome da classe que é a ultima coluna e depois transforma o objeto para o formato H2O:
+```{r}
+y = colnames(imp[length(imp)])
+y
+
+dados = as.h2o(imp)
+```
+
+Dividindo entre treino e teste:
+```{r}
+dados = h2o.splitFrame(data=dados, ratios=0.7)
+  # 0.7 =  porcentagem de dados para treino 
+treino = dados[[1]]
+teste = dados[[2]]
+```
+
+Transformando a variável dependente em fator:
+```{r}
+treino[,y] = as.factor(treino[,y])
+teste[,y] = as.factor(teste[,y])
+```
+
+Agora podemos criar os modelos: 
+
+Primeiramente o de AML:
+```{r}
+modelo_auto = h2o.automl(x = colnames(treino[1:(length(imp)-1)]), 
+                         y = y,training_frame = treino, max_runtime_secs = 180,sort_metric = 'AUC')
+  # Primeiro parâmetro preciso passar o nome das colunas dos dados de treino
+  # y pode ser passado assim pois já foi separado 
+  # Training_frame = conjunto de dados
+  # Max_runtime_secs = diz o tempo máximo que ele passará buscando o melhor modelo (180 segundos)
+    # Pode ser substituido por max_models, que ele irá parar quando tiver treinado um determinado número de modelos
+  # sort_metric = métrica para rankear os modelos (AUC = métrica da área sobre a curva ROC)
+```
+
+Agora vamos criar o modelo de Random Florest: 
+```{r}
+modelo_floresta =   h2o.randomForest(x = colnames(treino[1:(length(imp)-1)]),
+                                     y = y,training_frame = treino, nfolds = 5)
+```
+
+Vendo a performance do Random Florest: 
+```{r}
+h2o.performance(modelo_floresta, teste)
+```
+Métrica AUC = 0.83
+
+Analisando modelo de AML:
+```{r}
+#Ranking dos melhores auto ml
+#Area Under the ROC Curve (AUC)
+lb =as.data.frame(modelo_auto@leaderboard)
+lb
+```
+Foram criados 22 modelos 
+O AUC com melhor desempenho foi: StackedEnsemble_AllModels_AutoML_20200919_003443
+A métrica do AUC é melhor maximizar, portanto a do AML foi melhor que o Random Forest
+
+Encontramos o melhor modelo queremos usa-lo: 
+```{r}
+imp = read.csv("Churn_prever.csv", sep = ";")
+imp = as.h2o(imp)
+previsao = h2o.predict(modelo_auto@leader, imp) # @leader usa o modelo com melhor métrica 
+previsao = as.data.frame(previsao)
+previsao
+```
+

@@ -1,0 +1,45 @@
+install.packages("iml")
+  # Pacote com bibliotecas, técnicas de XIA 
+install.packages("partykit")
+install.packages("patchwork")
+  # Pacotes que o IML usa mas que por algum motivo as vezes eles não vem no IML 
+install.packages("randomForest")
+  # Floreta aleatória, é uma caixa preta, difícil explicação
+  
+Vamos criar um modelo em Random Forest e usar técnicas para explicar melhor esse modelo 
+```{r}
+library(iml)
+library(randomForest)
+library(partykit)
+library(patchwork)
+```
+Carregando conjunto de dados sobre carros 
+```{r}
+carros = read.csv('carros.csv', sep=";", encoding = "UTF-8")
+head(carros)
+```
+Temos 11 colunas e podemos escolher qual iremos prever 
+```{r}
+# Criando modelo randomForest
+modelo = randomForest(HP ~ . , data=carros, ntree=100)
+  # Escolhemos prever o HP e passamos . para dizer que todas as outras são independentes 
+  # ntree = numero de árvores, o algoritmos cria 100 arvores, compara e escolhe a melhor 
+# Criando objeto previsor
+previsor = Predictor$new(modelo, carros[,-11], y = carros$HP)
+  # Método Predictor é do pacote iml
+  # Parametos = modelo, variaveis independentes, variavel dependente 
+  # [,-11] =  todos os registros menos o último (11)
+
+```
+Feature Importance: 
+```{r}
+importancia = FeatureImp$new(previsor, loss="mae")
+  # loss = função para avalior o erro, performance 
+# Dataframe:
+importancia$results
+plot(importancia)
+```
+Podemos observar que a variável que mais importa para prever o HP é o cilindro
+Seguido do Tipo de Motor, Consumo e Carburadores 
+Por último a transmissão é o que menos importa 
+

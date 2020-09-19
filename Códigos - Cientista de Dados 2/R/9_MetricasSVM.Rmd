@@ -1,0 +1,52 @@
+
+Agora usaremos um modelo de Máquina de Vetor de Suporte
+```{r}
+library(caret)
+library(e1071)
+library(ROCit)
+library(Metrics)
+
+credito = read.csv('credit3.csv', sep=';')
+#transforma classe em fator
+credito$class = as.factor(credito$class)
+
+# Separando dados de treino e teste:
+#removemos o atributo id
+credito = credito[,-1]
+set.seed(1234)
+amostra = sample(2,1000,replace=T, prob=c(0.7,0.3))
+creditotreino = credito[amostra==1,]
+creditoteste = credito[amostra==2,]
+```
+
+Gerando o modelo: 
+```{r}
+modelo = svm(class ~ .,data=creditotreino, ntree=100,importance=T)
+modelo
+```
+
+Previsão:
+```{r}
+previsao = predict(modelo,creditoteste)
+previsao
+```
+
+Usando a Matriz de confusão para ver as métricas: 
+```{r}
+resultado =  caret::confusionMatrix( previsao, creditoteste$class,positive="1", mode="everything")
+resultado
+```
+
+Gráfico ROC: 
+```{r}
+objetoroc = 
+  rocit(as.numeric(levels(previsao))[previsao],as.numeric(levels(creditoteste$class))[creditoteste$class])
+  # Precisa mudar a previsão de fator para numeric
+plot(objetoroc)
+```
+
+Avaliando pela área abaixo da curva ROC:
+```{r}
+Metrics::auc(previsao,creditoteste$class)
+```
+

@@ -1,0 +1,134 @@
+Técnicas Avançadas de Avaliação de Cluster:
+
+install.packages("factoextra")
+install.packages("cluster")
+install.packages("NbClust")
+install.packages("fpc")
+install.packages("clValid")
+
+```{r}
+library(factoextra)
+library(cluster)
+library(NbClust)
+library(fpc)
+library(NbClust)
+library(clValid)
+```
+
+Dados para o primeiro Cluster:
+```{r}
+iris_1 = iris[1:4]
+iris_1  
+# Iris1 usa as 4 primeiras colunas do Iris 
+```
+
+Dados para o segundo Cluster: 
+```{r}
+set.seed(456)
+iris_2 = data.frame("col1" = sample(1:100,150,replace = T),
+"col2"  = sample(1:100,150,replace = T) ,
+"col3" = sample(1:100,150,replace = T), 
+"col4" = sample(1:100,150,replace = T))
+iris_2
+# Iris2 é gerado aleatoriamente, não deverá existir grupos naturalmente 
+# As colunas são populadas com números de 1 a 100 em 150 linhas, na mesma dimensão do iris original
+```
+
+Produzindo e Visualizando Clusters: 
+```{r}
+# Cluster 1: 
+cluster = kmeans(iris_1,centers=3)
+g1 = fviz_cluster(cluster, data=iris_1, ellipse.type = "convex", ggtheme = theme_bw(), main="Iris 1")
+  # Função fviz_cluster é usada para visualização
+  # ellipse.type = formato
+  # ggtheme = cores
+plot(g1)
+```
+```{r}
+# Cluster 2: 
+cluster = kmeans(iris_2,centers=3)
+g1 = fviz_cluster(cluster, data=iris_2, ellipse.type = "convex", ggtheme = theme_bw(), main="Iris 2")
+plot(g1)
+```
+
+1 - De fato existem Clusters nos dados? Os dados são agrupáveis?
+```{r}
+# Tendência através de  Hopkins' statistic
+# valor entre zero e 1. Esperamos proximidade com 1
+# n é o número de pontos selecionado dos dados
+get_clust_tendency(iris_1, n=50)
+get_clust_tendency(iris_2, n=50)
+# este método nos trás o gráfico de dissimilaridade ordenado - ODI
+# vermelhor similaridade, azul baixa similaridade
+```
+
+Se o Hopkins der mais de 0.75 existe uma agrupabilidade 
+
+2 - Qual é o número ideal de Cluster? 
+```{r}
+# Elbow : soma interna dos quadrados - within-cluster sum of square wss
+# adicionar um cluster não melhora o wss
+fviz_nbclust(iris_1, kmeans, method = "wss") 
+  
+# Average silhouette
+# O melhor é o que maximiza a silueta média entre os valores possíveis
+fviz_nbclust(iris_1, kmeans, method = "silhouette")
+
+#gap statistics - melhor será o maximiza a estatística Gap
+# K.max maximo de clusters a considerar
+# b integer, number of Monte Carlo (“bootstrap”) samples.
+gap = clusGap(iris_1, FUN = kmeans, K.max = 6)
+  # Primeiro gera o valor de Gap com clusGap, o resultado é chamado na função fviz_gap_stat
+
+fviz_gap_stat(gap)
+```
+No Elbow encontramos o 'cutuvelo' em 3, que seria o número ideal de Cluster.
+No Average a linha já indica que o número ideal de Clusters é 2.
+No Gap o número ideal é indicado em 4. 
+Cada uma das técnicas nos trouxe uma sugestão diferente de número de clusters. 
+
+Método NbClust nos da 30 diferentes índices para definir o melhor número de cluster 
+```{r}
+# 30 indíces
+#min.nc e max.nc minimo e máximo
+NbClust(iris_1, diss = NULL, distance = "euclidean", min.nc = 2, max.nc = 6, method ="kmeans")
+#gráficos
+#Hubert index busca-se um "joelho" que representa aumento na medida
+#indice D busca-se um "joelho" que representa aumento no valor da medida
+```
+O NbClust nos diz que de acordo com a regra da maioria, o melhor número de Clusters é 2, pois a maioria das métricas disse isso.
+
+3 - Foram produzidos bons clusters? 
+```{r}
+#dunn index
+#testamos kmeans com 4 clusters
+x  = kmeans(iris_1,centers=4)
+dunn4 = cluster.stats(d = dist(iris_1), x$cluster)
+dunn4$dunn2
+
+#testamos kmeans com 3 clusters
+x  = kmeans(iris_1,centers=3)
+dunn3 = cluster.stats(d = dist(iris_1), x$cluster)
+dunn3$dunn2
+
+
+#testamos kmeans com 2 clusters
+x  = kmeans(iris_1,centers=2)
+dunn2 = cluster.stats(d = dist(iris_1), x$cluster)
+dunn2$dunn2
+
+#ver todas as estatísticas
+dunn4
+```
+O melhor índice foi o com 2 Clusters. 
+
+4 - Usamos o melhor agrupador? 
+```{r}
+# Compute clValid
+agrupadores = clValid(iris_1, nClust = 2:6, 
+                  clMethods = c("hierarchical","kmeans","pam"), validation = "internal")
+# Summary
+summary(agrupadores)
+```
+
+Em resumo o melhor método foi o Hierarquico com 2 Clusters 

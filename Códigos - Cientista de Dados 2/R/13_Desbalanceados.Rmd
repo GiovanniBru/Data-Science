@@ -1,0 +1,46 @@
+Tratamento de conjunto de dados desbalanceado: 
+
+```{r}
+#install.packages("DMwR")
+library(DMwR)
+```
+
+```{r}
+credito = read.csv("Credit3.csv",sep = ";", stringsAsFactors = T)
+credito = credito[,-1]
+# transforma a classe em fator, ela não foi transformada antes, pois não é considerada uma string por ser de 0 e 1 
+credito$class = as.factor(credito$class)
+head(credito)
+```
+
+Visualizando o Balanceamento: 
+```{r}
+summary(credito$class)
+```
+Temos 300 0 e 700 1 
+
+600 minoritária e 300 majoritária, pois é baseado na diferença da minoritária
+```{r}
+creditonovo = SMOTE(class ~ ., credito,   perc.over = 100, perc.under = 100 )
+  # Gera um novo conjunto de dados 
+  # Precisa separar a variável dependente das outras 
+  # perc.over = 100 = nos diz quantos dados ele vai gerar a partir da classe minoritária (0), o valor de 100 duplica o valor da minoritária
+  # perc.under = 100 = vê qual a proporção da classe minoritária aumentou e gera uma proporção equivalente, o valor de 100 produz 300 da classe majoritária 
+summary(creditonovo$class)
+```
+Temos como resultado 600 zeros e 300 uns, exemplo só para fins didáticos
+
+Fazendo corretamente: 
+600 minoritária e 600 majoritária, colocando o dobro da diferença da minoritária no under
+```{r}
+creditonovo1 = SMOTE(class ~ ., credito,   perc.over = 100, perc.under = 200 )
+summary(creditonovo1$class)
+```
+Agora temos balanceado com 600 para cada
+
+```{r}
+head(creditonovo1)
+```
+
+
+

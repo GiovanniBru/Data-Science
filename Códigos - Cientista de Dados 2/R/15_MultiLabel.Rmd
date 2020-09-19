@@ -1,0 +1,96 @@
+
+Veremos uma Transformação de Problema, de Multi Label para Multi Class
+
+```{r}
+#install.packages("mlr") Biblioteca de Multi Label para R
+#install.packages("caret", dependencies=T)
+library(mlr)
+library(caret)
+```
+
+Carregando os dados: 
+```{r}
+musica = read.csv("Musica.csv")
+head(musica)
+```
+Podemos observar que temos 77 colunas, sendo as 6 primeiras as classes
+
+Transformando as colunas 1 a 6 de binário para lógico, de 1 e 0 para True ou False 
+```{r}
+musica[, 1:6] = sapply(musica[, 1:6], as.logical) # sapply aplica uma transformação em bloco
+musica
+```
+
+Separando os Labels/nomes das Classes: 
+```{r}
+rotulos = colnames(musica)[1:6]
+rotulos
+```
+
+Criando a Tarefa: 
+```{r}
+tarefa = makeMultilabelTask(data = musica, target = rotulos)
+  # makeMultiLabelTask cria uma tarefa de aprendizado 
+  # Passamos os dados e os rotulos das classes 
+#cria um objeto de aprendizado
+aprendizado = makeLearner("classif.rpart")
+```
+
+Primeiro criamos um Binary Relevance, problema de transformação:
+```{r}
+tipoclass = makeMultilabelBinaryRelevanceWrapper(aprendizado)
+```
+
+Dividindo os dados: 
+```{r}
+particao = createDataPartition(1:592,p=.7)
+```
+
+```{r}
+#descarrega caret para não ter conflito com método train
+detach("package:caret", unload=TRUE)
+```
+
+Treinando o modelo: 
+```{r}
+modelo = train(tipoclass, tarefa, subset = particao$Resample1) #subset = partição de treino criada 
+modelo
+```
+
+Fazendo a Previsão: 
+```{r}
+predicao = predict(modelo, task = tarefa, subset = subset(seq(1:592),!seq(1:592) %in% particao$Resample1))
+  # Passamos o modelo e a tarefa criada 
+  # subset = subsequencia dos dados de 1 a 592 dos dados que não (!) estão nos dados usados para treino (particao$Resample1)
+predicao
+```
+
+Avaliando a performance: 
+```{r}
+performance(predicao, measures = list(multilabel.hamloss))
+```
+Obtivemos um Hamloss de 0.23, ou seja, 23% dos labels foram errados 
+
+Testando outro tipo de transformação: 
+```{r}
+#classifier chains - substituo tipoclass
+tipoclass = makeMultilabelClassifierChainsWrapper(aprendizado)
+```
+
+Treinando:
+```{r}
+modelo = train(tipoclass, tarefa, subset = particao$Resample1)
+```
+
+Previsão: 
+```{r}
+predicao = predict(modelo, task = tarefa, subset = subset(seq(1:592),!seq(1:592) %in% particao$Resample1))
+```
+
+Avaliando:
+```{r}
+performance(predicao, measures = list(multilabel.hamloss))
+```
+Obtivemos um Hamloss de 0.24, ou seja, 24% dos labels foram errados
+
+O Binary teve uma performance levemente melhor que o Classifier Chains 

@@ -1,0 +1,50 @@
+```{r}
+library(iml)
+library(randomForest)
+library(partykit)
+library(patchwork)
+carros = read.csv('carros.csv', sep=";", encoding = "UTF-8")
+head(carros)
+modelo = randomForest(HP ~ . , data=carros, ntree=100)
+previsor = Predictor$new(modelo, carros[,-11], y = carros$HP)
+```
+Accumulates Local Effects: 
+Gráfico que mostra como que uma característica influencia a classe que está prevendo, em Média 
+```{r}
+# vamos pegar Cilindros no feature como característica mais importante pois foi o que descobrimos com o FeatureImportance
+ALE = FeatureEffect$new(previsor, feature="Cilindros", method="ale")
+ALE$plot()
+# Podemos usar outra caracteristica mudando só o feature no objeto ALE já criado
+# Consumo: 
+ALE$set.feature("Consumo")
+ALE$plot()
+```
+Podemos observar como carros de 4, 6 e 8 cilindros influenciam em média o HP
+Depois podemos ver o quanto o Consumo influencia o HP 
+
+ICE = Individual Conditional Expectation 
+Gráfico que mostra o valor previsto para como cada observação influencia a classe:
+```{r}
+ICE = FeatureEffect$new(previsor, feature="Cilindros", method="ice")
+ICE$plot()
+```
+Com esse gráfico podemos ver como os cilindros influenciam a classe em cada veículo (que são as linhas)
+
+PDP = Partial Dependence Plots(PDP)
+Gráfico que mostra a previsão média de acordo com as previsões 
+```{r}
+PDP = FeatureEffect$new(previsor, feature="Cilindros", method="pdp")
+PDP$plot()
+```
+Esse gráfico mostra a influência média 
+
+Todos os atributos no mesmo gráfico: 
+```{r}
+ALE = FeatureEffects$new(previsor, method="ale")
+plot(ALE)
+ICE = FeatureEffects$new(previsor, method="ice")
+plot(ICE)
+PDP = FeatureEffects$new(previsor, method="pdp")
+plot(PDP)
+```
+

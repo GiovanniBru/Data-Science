@@ -1,0 +1,41 @@
+```{r}
+library(iml)
+library(randomForest)
+library(partykit)
+library(patchwork)
+carros = read.csv('carros.csv', sep=";", encoding = "UTF-8")
+head(carros)
+modelo = randomForest(HP ~ . , data=carros, ntree=100)
+previsor = Predictor$new(modelo, carros[,-11], y = carros$HP)
+```
+
+Tecnicas Locais = utilizadas quando queremos explicar uma única instância, uma previsão especifíca 
+
+```{r}
+# Precisamos escolher uma instância para fazer a previsão, vamos pegar a linha 10
+carros[10,]
+previsao=predict(modelo, carros[10,])
+previsao
+```
+O valor real é 123, a previsão foi de 120. Bem próximo
+Agora queremos uma explicação:
+```{r}
+# Técnica de Local Model, cria um modelo para fazer uma previsão local e mostra a explicação da influencia dos atributos no modelo:
+explicacao = LocalModel$new(previsor, x.interest = carros[10,1:10 ])
+  # x.interest = escolhemos a linha, e passamos de 1:10 para não pegar a classe 
+explicacao$results
+plot(explicacao)
+```
+Actual Prediction é a previsão que o modelo RF preveu
+LocalModel Prediction é o modelo local que o Local Model criou para fazer a previsão 
+No gráfico podemos ver a influência de alguns atributos no resulado 
+
+Técnica de Shapley, baseado na teoria dos jogos:
+```{r}
+shapley = Shapley$new(previsor, x.interest = carros[1,1:10])
+shapley$plot
+```
+Actual Predition = previsão normal
+Average Prediction = previsão media criada pelo modelo
+Podemos ver a influencia de cada atributo nessa previsão 
+Ao contrário do LocalModel, o Shapley mostra a influencia de todos os atributos 

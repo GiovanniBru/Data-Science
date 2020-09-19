@@ -1,0 +1,68 @@
+Métricas para Avaliação de Erros: 
+
+install.packages('randomForest')
+install.packages('caret')
+install.packages('e1071')
+install.packages('ROCit')
+install.packages('Metrics')
+
+Nesse programa usaremos um modelo Random Forest 
+```{r}
+library(randomForest)
+library(caret)
+library(e1071)
+library(ROCit)
+library(Metrics)
+```
+
+Lendo os dados: 
+```{r}
+credito = read.csv('credit3.csv', sep=';')
+#transforma classe em fator
+credito$class = as.factor(credito$class)
+head(credito)
+```
+
+Separando dados de treino e teste:
+```{r}
+credito = credito[,-1]
+set.seed(1234)
+amostra = sample(2,1000,replace=T, prob=c(0.7,0.3))
+creditotreino = credito[amostra==1,]
+creditoteste = credito[amostra==2,]
+```
+
+Gerando Modelo:
+```{r}
+floresta = randomForest(class ~ .,data=creditotreino, ntree=100,importance=T)
+floresta
+```
+
+Fazendo Previsão:
+```{r}
+previsao = predict(floresta,creditoteste)
+previsao
+```
+
+Várias métricas podem ser visualizadas com a Matriz de Confusão: 
+```{r}
+resultado =  caret::confusionMatrix( previsao, creditoteste$class,positive="1", mode="everything")
+  # mode = everythin mostra todos os resultados 
+resultado
+```
+
+Podemos ver a matriz de confusão, acurácia, Recall, F1, Sensivity, Specificity, Precision, e etc. 
+
+Criando gráfico ROC: 
+```{r}
+objetoroc = 
+  rocit(as.numeric(levels(previsao))[previsao],as.numeric(levels(creditoteste$class))[creditoteste$class])
+plot(objetoroc)
+```
+
+Avaliando a Performance com base na área abaixo da curva do gráfico ROC: 
+```{r}
+Metrics::auc(previsao,creditoteste$class)
+```
+
+Foi o mesmo valor da acurácia. 

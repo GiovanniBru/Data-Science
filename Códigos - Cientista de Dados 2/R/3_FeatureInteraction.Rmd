@@ -1,0 +1,29 @@
+```{r}
+library(iml)
+library(randomForest)
+library(partykit)
+library(patchwork)
+carros = read.csv('carros.csv', sep=";", encoding = "UTF-8")
+head(carros)
+modelo = randomForest(HP ~ . , data=carros, ntree=100)
+previsor = Predictor$new(modelo, carros[,-11], y = carros$HP)
+```
+Feature Interaction mostra a interação entre características (colunas)
+  Ou sobre a classe 
+As características sobre a classe não se dão de forma independente: 
+  uma característica A vai ter uma determinada influencia sobre a classe e essa influencia pode mudar conforme uma característica B muda 
+
+```{r}
+interacao = Interaction$new(previsor)
+plot(interacao)
+interacao$results
+```
+Estamos vendo as características de forma individual, a força de cada uma delas na previsão do HP
+
+Interação das características Entre elas:
+```{r}
+interact = Interaction$new(previsor, feature="Cilindros")
+plot(interact)
+```
+Podemos observar todas as características como elas interagem com o Cilindro
+Podemos mudar o Cilindro e ver de qualquer atributo

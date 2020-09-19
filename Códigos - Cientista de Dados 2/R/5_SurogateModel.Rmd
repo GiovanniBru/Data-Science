@@ -1,0 +1,24 @@
+```{r}
+library(iml)
+library(randomForest)
+library(partykit)
+library(patchwork)
+carros = read.csv('carros.csv', sep=";", encoding = "UTF-8")
+head(carros)
+modelo = randomForest(HP ~ . , data=carros, ntree=100)
+previsor = Predictor$new(modelo, carros[,-11], y = carros$HP)
+```
+
+Surogate = modelo substituto. Cria um modelo mais simples para explicar um modelo mais complexo 
+
+```{r}
+# Criando modelo Substituto: 
+arvore = TreeSurrogate$new(previsor)
+  # A tecnica é sempre baseada em um modelo anterior criado 
+plot(arvore$tree)
+```
+
+Mostra a decisão baseada em cilindros. Se a quantidade de Cilindros for <= 6, temos uma previsão dentro do intervalo mostrado. Se a quantidade de cilindros for > 6, temos outra previsão dentro do intervalo. 
+n é o número de instâncias que atendem a condição imposta 
+Temos uma árvore de decisão extremamente simples, porém muito explicável. 
+Desvantagem = não representa de forma fiel o processo de decisão do modelo, pois só mostra um atributo
